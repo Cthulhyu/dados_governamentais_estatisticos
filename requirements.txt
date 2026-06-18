@@ -1,0 +1,15 @@
+# Dependências Python do projeto.
+# Ajustem conforme o que o grupo realmente usar.
+pandas
+numpy
+pyarrow
+fastparquet
+requests
+beautifulsoup4
+scikit-learn
+matplotlib
+seaborn
+# Para coleta do State of Data via Kaggle/croissant (opcional):
+# mlcroissant
+# Para modelos densos / embeddings (opcional):
+# sentence-transformers

@@ -1,0 +1,99 @@
+---
+title: "Trabalho Final — Recuperação da Informação"
+subtitle: "Análise comparativa: State of Data Brazil × [base externa do grupo]"
+author: "Grupo X — Integrante 1, Integrante 2, Integrante 3"
+date: today
+date-format: "DD/MM/YYYY"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: show
+    df-print: kable
+  pdf:
+    toc: true
+    number-sections: true
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Introdução e pergunta de pesquisa
+
+> Apresentem aqui o tema do grupo e a **pergunta** que o trabalho responde.
+> Qual base externa escolheram e por quê ela conversa com o State of Data?
+
+# Coleta das bases
+
+## State of Data Brazil (consolidação)
+
+A consolidação das edições é feita pelo script `src/coleta/consolida_state_of_data.py`,
+que empilha os CSVs e gera o `.parquet`.
+
+```{python}
+#| label: carregar-sod
+from pathlib import Path
+import pandas as pd
+
+def ler_parquet_robusto(caminho):
+    """Lê parquet contornando incompatibilidades pandas/pyarrow."""
+    caminho = str(caminho)
+    try:
+        import pyarrow.parquet as pq
+        return pq.read_table(caminho).to_pandas()
+    except Exception:
+        pass
+    try:
+        return pd.read_parquet(caminho, engine="fastparquet")
+    except Exception:
+        return pd.read_parquet(caminho)
+
+df_sod = ler_parquet_robusto("data/processed/dados_state_of_data_consolidados.parquet")
+print(f"State of Data: {df_sod.shape[0]:,} linhas x {df_sod.shape[1]:,} colunas")
+```
+
+## Base externa (scraping / API)
+
+> Descrevam a fonte, o método de coleta e mostrem uma amostra.
+> A coleta está em `src/coleta/coleta_externa.py`.
+
+```{python}
+#| label: carregar-externa
+df_ext = pd.read_csv("data/raw/base_externa.csv")
+df_ext.head()
+```
+
+# Limpeza, padronização e integração
+
+> Expliquem as decisões de limpeza e **como** integraram as duas bases.
+> O código vive em `src/limpeza/integra.py`.
+
+# Modelagem de Recuperação da Informação
+
+> Apliquem **pelo menos um** modelo de RI (Booleano, Vetorial/TF-IDF, BM25,
+> Dense/embeddings) e justifiquem a escolha. Mostrem os resultados.
+
+```{python}
+#| label: modelo-ri
+# Exemplo de espaço para o modelo escolhido pelo grupo.
+# Ex.: TF-IDF + similaridade do cosseno, ou embeddings, etc.
+```
+
+# Resultados e visualizações
+
+> Gráficos com interpretação. Não basta mostrar — expliquem o que cada
+> resultado significa para a pergunta de pesquisa.
+
+# Discussão crítica
+
+> O que funcionou, o que não funcionou e por quê. Limitações dos dados e
+> do modelo. Onde a análise poderia avançar.
+
+# Conclusão
+
+> Resposta objetiva à pergunta de pesquisa, com base nas evidências.
+
+# Referências
