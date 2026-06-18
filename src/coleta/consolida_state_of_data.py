@@ -1,14 +1,5 @@
 """
 Consolida as edições do State of Data Brazil (2021–2025) num único .parquet.
-
-A ideia aqui é a mesma que vimos em aula: em vez de ler arquivo por arquivo
-na mão, a gente varre a pasta de CSVs, empilha tudo num só DataFrame e salva
-no formato colunar (.parquet), que é leve e rápido de reler depois.
-
-ENTRADA  : data/raw/State_of_Data_*.csv  (uma edição por arquivo)
-SAÍDA    : data/processed/dados_state_of_data_consolidados.parquet
-
-Rode com:  python src/coleta/consolida_state_of_data.py
 """
 
 from pathlib import Path
@@ -33,7 +24,10 @@ def carregar_edicoes(pasta: Path) -> pd.DataFrame:
     for arq in arquivos:
         print(f"  lendo {arq.name} ...")
         df = pd.read_csv(arq, low_memory=False)
-        # Guardamos de qual arquivo veio cada linha — útil pra extrair o ano depois
+        
+        # O .copy() resolve o PerformanceWarning de fragmentação de memória do Pandas
+        df = df.copy() 
+        
         df["arquivo_origem"] = arq.name
         quadros.append(df)
 
@@ -47,7 +41,7 @@ def main():
     print("Consolidando edições do State of Data...")
     df = carregar_edicoes(PASTA_RAW)
 
-    # (opcional) extrair o ano da pesquisa a partir do nome do arquivo
+    # Extrair o ano da pesquisa a partir do nome do arquivo
     df["ano_pesquisa"] = (
         df["arquivo_origem"].str.extract(r"(\d{4})").astype("Int64")
     )
@@ -57,6 +51,21 @@ def main():
     df = df.drop_duplicates().reset_index(drop=True)
     print(f"  duplicatas removidas: {antes - len(df)}")
 
+    # =========================================================
+    # CORREÇÃO PARA O ERRO DO PYARROW (TIPOS MISTOS)
+    # =========================================================
+    print("  Padronizando tipos de dados para conversão Parquet...")
+    
+    # 1. Garante que os nomes de todas as colunas sejam strings
+    df.columns = df.columns.astype(str)
+    
+    # 2. Converte todas as colunas com tipos de dados mistos (object) para texto (string).
+    # Isso impede que o Parquet trave ao ver 'True' em um ano e '1' no outro.
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].astype(str)
+
+    print("  Salvando arquivo...")
     df.to_parquet(ARQUIVO_SAIDA, index=False)
     print(f"Arquivo gerado: {ARQUIVO_SAIDA}")
     print(f"Dimensões finais: {df.shape[0]:,} linhas x {df.shape[1]:,} colunas")
